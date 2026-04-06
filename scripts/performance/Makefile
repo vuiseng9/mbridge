@@ -26,19 +26,19 @@ _bench_intranode:
 	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
 		-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(NSTEP)
 
-# Step Time : 5.90s GPU utilization: 1143.5 MODEL_TFLOP/s/GPU
+# Step Time: 5.90s , GPU utilization: 1142.7 MODEL_TFLOP/s/GPU , Peak Mem: 136.4GB
 B16-b200-bf16-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=bf16
 
-# Step Time : 4.23s GPU utilization: 1593.3 MODEL_TFLOP/s/GPU
+# Step Time: 4.23s , GPU utilization: 1595.5 MODEL_TFLOP/s/GPU , Peak Mem: 113.0GB
 B08-b200-fp8-cs-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=fp8_cs
 
-# Step Time : 4.36s GPU utilization: 1547.0 MODEL_TFLOP/s/GPU
+# Step Time: 4.34s , GPU utilization: 1554.5 MODEL_TFLOP/s/GPU , Peak Mem: 124.4GB
 B18-b200-mxfp8-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=fp8_mx
 
-# Step Time : 3.44s GPU utilization: 1959.0 MODEL_TFLOP/s/GPU
+# Step Time: 3.44s , GPU utilization: 1961.8 MODEL_TFLOP/s/GPU , Peak Mem: 171.6GB
 B04-b200-nvfp4-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=nvfp4
 
