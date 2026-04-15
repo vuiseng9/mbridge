@@ -1,6 +1,10 @@
 
 # last verify on docker image:
 # nvcr.io/nvidia/nemo:26.02.01
+# goto /opt/Megatron-Bridge/
+# git remote add vs https://github.com/vuiseng9/mbridge
+# git fetch vs
+# git checkout vs/r0.3.0-perf -b r0.3.0-perf
 
 NSTEP := 10
 torchrun_intra = torchrun --standalone --nproc-per-node
