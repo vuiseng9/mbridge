@@ -1,10 +1,10 @@
 
 # last verify on docker image:
-# nvcr.io/nvidia/nemo:26.02.01
+# nvcr.io/nvidia/nemo:26.04
 # goto /opt/Megatron-Bridge/
 # git remote add vs https://github.com/vuiseng9/mbridge
 # git fetch vs
-# git checkout vs/r0.3.0-perf -b r0.3.0-perf
+# git checkout vs/r0.4.0-perf -b r0.4.0-perf
 
 NSTEP := 10
 torchrun_intra = torchrun --standalone --nproc-per-node
@@ -14,9 +14,8 @@ MASTER_PORT ?= 29700
 master ?= $(MASTER_ADDR)
 port ?= $(MASTER_PORT)
 dbg ?= 0
+xargs ?= 
 
-dep-install:
-	pip install os
 
 login-hf:
 	if ! git config --global --get credential.helper | grep --color=auto -q store; then \
@@ -30,9 +29,34 @@ _bench_intranode:
 	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
 		-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(NSTEP)
 
+_bench_intranode_megatron_fsdp:
+	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
+		-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(NSTEP) --use_megatron_fsdp 1 --cuda_graph_impl none 
+		
+# on A100 - Step Time: 32.59s , GPU utilization: 207.0 MODEL_TFLOP/s/GPU , Peak Mem: 64.3GB
+B16-h100-bf16-llama3_8b:
+	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=h100 recipe=bf16
+
+# on A100 - Step Time: 7.04s , GPU utilization: 119.8 MODEL_TFLOP/s/GPU , Peak Mem: 59.5GB (gb16)
+# 			Step Time: 11.91s , GPU utilization: 70.8 MODEL_TFLOP/s/GPU , Peak Mem: 42.5GB (add -ol offload 16)
+# INFO:utils.overrides:DP: 8; TP: 1; PP: 1; CP: 1; VP: 1
+# INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Number of FSDP Parameter Groups: 34
+# original cp:2, sl:8k, gb:512, too long to show progress with mb=1
+# -ol 16, half of total tx layers.
+mfsdp-B16-h100-bf16-llama3_8b:
+	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
+		-m llama -mr llama3_8b -ng $(ngpu) -g h100 -c bf16 --max_steps $(NSTEP) \
+		--use_megatron_fsdp 1 -cp 1 -gb 16 -ol 16
+# --nccl_ub 1 error
+	
+
 # Step Time: 5.90s , GPU utilization: 1142.7 MODEL_TFLOP/s/GPU , Peak Mem: 136.4GB
 B16-b200-bf16-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=bf16
+
+# Step Time: 6.23s , GPU utilization: 1082.6 MODEL_TFLOP/s/GPU , Peak Mem: 99.0GB
+B16-mfsdp-b200-bf16-llama3_8b:
+	$(MAKE) _bench_intranode_megatron_fsdp family=llama model=llama3_8b gputype=b200 recipe=bf16
 
 # Step Time: 4.23s , GPU utilization: 1595.5 MODEL_TFLOP/s/GPU , Peak Mem: 113.0GB
 B08-b200-fp8-cs-llama3_8b:
@@ -71,4 +95,8 @@ B04-b200-nvfp4-llama3_8b:
 
 # B200 4500 FP8-TFLOPS	9000 FP4-TFLOPS
 
+
+# for attr in dir(cfg.ddp):
+#     if '__' not in attr:
+#         print(f"{attr}={getattr(cfg.ddp, attr)}")
 
