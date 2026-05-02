@@ -16,6 +16,22 @@ port ?= $(MASTER_PORT)
 dbg ?= 0
 xargs ?= 
 
+PROFILE_DIR ?= profiles
+PROFILE_MAX_STEPS ?= 10
+PROFILE_START ?= 5
+PROFILE_STOP ?= 7
+PROFILE_RANKS ?= [0]
+PROFILE_TRACE ?= cuda,nvtx,osrt
+PROFILE_SAMPLE ?= none
+PROFILE_RECORD_SHAPES ?= false
+PROFILE_GPU_METRICS ?= 0
+PROFILE_GPU_METRICS_DEVICES ?= all
+PROFILE_GPU_METRICS_FREQ ?=
+PROFILE_OUTPUT ?= $(PROFILE_DIR)/$(family)-$(model)-$(gputype)-$(recipe)
+PROFILE_NSYS_ARGS ?=
+PROFILE_HYDRA_OVERRIDES ?=
+PROFILE_GPU_METRICS_ARGS = $(if $(filter 1,$(PROFILE_GPU_METRICS)),--gpu-metrics-devices=$(PROFILE_GPU_METRICS_DEVICES),) $(if $(PROFILE_GPU_METRICS_FREQ),--gpu-metrics-frequency=$(PROFILE_GPU_METRICS_FREQ),)
+
 
 login-hf:
 	if ! git config --global --get credential.helper | grep --color=auto -q store; then \
@@ -32,7 +48,29 @@ _bench_intranode:
 _bench_intranode_megatron_fsdp:
 	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
 		-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(NSTEP) --use_megatron_fsdp 1 --cuda_graph_impl none 
-		
+
+
+_profile_bench_intranode:
+	mkdir -p $(PROFILE_DIR); \
+	DBG_ATTACH=$(dbg) nsys profile \
+		-s $(PROFILE_SAMPLE) \
+		-t $(PROFILE_TRACE) \
+		-o $(PROFILE_OUTPUT) \
+		--force-overwrite true \
+		--capture-range=cudaProfilerApi \
+		--capture-range-end=stop \
+		$(PROFILE_GPU_METRICS_ARGS) \
+		$(PROFILE_NSYS_ARGS) \
+		$(torchrun_intra) $(ngpu) run_script.py \
+			-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(PROFILE_MAX_STEPS) \
+			profiling.use_nsys_profiler=true \
+			profiling.profile_step_start=$(PROFILE_START) \
+			profiling.profile_step_end=$(PROFILE_STOP) \
+			"profiling.profile_ranks=$(PROFILE_RANKS)" \
+			profiling.record_shapes=$(PROFILE_RECORD_SHAPES) \
+			$(PROFILE_HYDRA_OVERRIDES);
+
+
 # on A100 - Step Time: 32.59s , GPU utilization: 207.0 MODEL_TFLOP/s/GPU , Peak Mem: 64.3GB
 B16-h100-bf16-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=h100 recipe=bf16
@@ -49,6 +87,27 @@ mfsdp-B16-h100-bf16-llama3_8b:
 		--use_megatron_fsdp 1 -cp 1 -gb 16 -ol 16
 # --nccl_ub 1 error
 	
+profile-mfsdp-B16-h100-bf16-llama3_8b:
+	mkdir -p profiles/$@; \
+	DBG_ATTACH=$(dbg) nsys profile \
+		-s $(PROFILE_SAMPLE) \
+		-t $(PROFILE_TRACE) \
+		-o profiles/$@ \
+		--force-overwrite true \
+		--capture-range=cudaProfilerApi \
+		--capture-range-end=stop \
+		$(PROFILE_GPU_METRICS_ARGS) \
+		$(PROFILE_NSYS_ARGS) \
+		$(torchrun_intra) $(ngpu) run_script.py \
+			-m llama -mr llama3_8b -ng $(ngpu) -g h100 -c bf16 \
+			--use_megatron_fsdp 1 -cp 1 -gb 16 -ol 16 \
+			--max_steps $(PROFILE_MAX_STEPS) \
+			profiling.use_nsys_profiler=true \
+			profiling.profile_step_start=$(PROFILE_START) \
+			profiling.profile_step_end=$(PROFILE_STOP) \
+			"profiling.profile_ranks=$(PROFILE_RANKS)" \
+			profiling.record_shapes=$(PROFILE_RECORD_SHAPES) \
+			$(PROFILE_HYDRA_OVERRIDES);
 
 # Step Time: 5.90s , GPU utilization: 1142.7 MODEL_TFLOP/s/GPU , Peak Mem: 136.4GB
 B16-b200-bf16-llama3_8b:
