@@ -71,12 +71,16 @@ _profile_bench_intranode:
 			$(PROFILE_HYDRA_OVERRIDES);
 
 
-# on A100 - Step Time: 32.59s , GPU utilization: 207.0 MODEL_TFLOP/s/GPU , Peak Mem: 64.3GB
+dev_olmoe:
+	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
+		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 10
+
+# on A100 - Step Time: 32.59s , GPU utilization: 207.0 MODEL_TFLOP/s/GPU , Peak Mem: 70GB
 B16-h100-bf16-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=h100 recipe=bf16
 
 # on A100 - Step Time: 7.04s , GPU utilization: 119.8 MODEL_TFLOP/s/GPU , Peak Mem: 59.5GB (gb16)
-# 			Step Time: 11.91s , GPU utilization: 70.8 MODEL_TFLOP/s/GPU , Peak Mem: 42.5GB (add -ol offload 16)
+# on A100 - Step Time: 11.91s , GPU utilization: 70.8 MODEL_TFLOP/s/GPU , Peak Mem: 42.5GB (add -ol offload 16)
 # INFO:utils.overrides:DP: 8; TP: 1; PP: 1; CP: 1; VP: 1
 # INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Number of FSDP Parameter Groups: 34
 # original cp:2, sl:8k, gb:512, too long to show progress with mb=1

@@ -1,0 +1,65 @@
+main
+    recipe = get_perf_optimized_recipe(
+        module_name = f"configs.{model_family_name}"                     # 'configs.llama'
+        module = importlib.import_module(module_name)
+
+        recipe_name = f"{model_recipe_name}_{train_task}_config_{gpu}"   # llama3_8b_pretrain_config_h100
+        recipe_builder = getattr(module, recipe_name)                    # <function llama3_8b_pretrain_config_h100 at 0x74c3af57bb00>
+        return recipe_builder(**kwargs)                                  # kwargs = {'precision': 'bf16', 'mock': True, 'config_variant': 'v2'}
+            base_cfg = get_workload_base_config ...
+                workload_base_config = getattr(module, versioned_config_name, None)  # module is configs.llama, versioned_config_name is LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V2, basically LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V2 in configs.llama.__init__.py
+                                                                                     # v2 not found, LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V1
+                                                                                     what are these? LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V1, dataclass
+                    LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
+                        BASE_LLAMA3_8B_CONFIG,
+                        context_parallel_size=2,
+                    )                                                                   # replace is a function replace attr of the dataclass object with new preset value
+            base_cfg = LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V1
+            precision_config = get_precision_config(precision)
+            ...
+
+    recipe is fully populated..
+    recipe = set_cli_overrides(recipe, cli_overrides)                    # cli_overrides is  a list[str] of any unrecognized arguments that weren't defined in the parser (e.g. trainer.max_steps=1000 or model.hidden_size=4096)
+    recipe = set_user_overrides(recipe, args)                            # args is argparse
+
+    recipe = set_post_overrides(
+        recipe,
+        args.model_family_name,
+        args.model_recipe_name,
+        args.gpu,
+        args.num_gpus,
+        args.compute_dtype,
+        args.task,
+        user_gbs=args.global_batch_size,
+        config_variant=args.config_variant,
+    )
+    
+in summary, 
+/opt/Megatron-Bridge/scripts/performance/configs/llama/__init__.py
+    from .llama3_workload_base_configs import LLAMA3_8B_PRETRAIN_CONFIG_H100_BF16_V1 
+    # these are base_cfg, which is an object of dataclasses
+/opt/Megatron-Bridge/scripts/performance/configs/llama/llama3_llm_pretrain.py
+    def llama3_8b_pretrain_config_h100(
+    function to incrementally set more attribute to the instantiated object
+
+then at main script, it is all the overrides
+
+
+
+# on H200 - Step Time: 12.73s , GPU utilization: 530.0 MODEL_TFLOP/s/GPU , Peak Mem: 70.0GB
+it is already microbatch 1
+
+
+
+
+how to run olmoe? use ootb recipe
+/opt/Megatron-Bridge/src/megatron/bridge/recipes/olmoe/olmoe_7b.py
+    cfg.train.train_iters = 10 , make this small so that the mock dataset is small
+
+/opt/Megatron-Bridge/scripts/training/run_recipe.py
+torchrun --standalone --nproc-per-node 8 run_recipe.py \
+        --recipe olmoe_7b_pretrain_config --dataset llm-pretrain-mock
+
+footgun - nemo_experiments folder, the script will load from here
+so if you train other model, the load checkpoint will error your new model.
+best practice, remove the folder totally before start.
