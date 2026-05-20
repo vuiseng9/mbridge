@@ -63,3 +63,23 @@ torchrun --standalone --nproc-per-node 8 run_recipe.py \
 footgun - nemo_experiments folder, the script will load from here
 so if you train other model, the load checkpoint will error your new model.
 best practice, remove the folder totally before start.
+
+
+
+.to_yaml to write of ConfigContainer but it is annoying that it gets error the next time, need to remove them.
+
+run_script.py dump the config here.
+/nemo_run/configs/ConfigContainer.yaml
+
+At the deeper Megatron level (if GBS somehow ends up None), 
+it would fall back to micro_batch_size × data_parallel_size, 
+but the scripts prevent that by always setting a GBS from the config.
+
+need to set default number of gpus, otherwise it will get auto scaled
+/opt/Megatron-Bridge/scripts/performance/utils/overrides.py
+    new_gbs = int(workload_base_config.gbs_scaling_factor * num_gpus)
+
+
+  use_distributed_optimizer: true
+  use_precision_aware_optimizer: true
+  100GB per gpu

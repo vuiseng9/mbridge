@@ -39,9 +39,9 @@ def olmoe_1b_7b_pretrain_config_h100(
 
     cfg.comm_overlap = CommOverlapConfig(tp_comm_overlap=bool(cfg.model.tensor_model_parallel_size > 1))
 
-    # if cfg.ddp.use_megatron_fsdp:
-    #     cfg.ddp.nccl_ub = True
-    #     cfg.model.gradient_accumulation_fusion = False  # Disabled to avoid functional errors
-    #     cfg.ddp.keep_fp8_transpose_cache = True
+    if cfg.ddp.use_megatron_fsdp:
+        cfg.ddp.nccl_ub = True
+        cfg.model.gradient_accumulation_fusion = False  # Disabled to avoid functional errors
+        cfg.ddp.keep_fp8_transpose_cache = True
 
     return cfg

@@ -72,6 +72,7 @@ _profile_bench_intranode:
 
 
 dev_olmoe:
+	rm -f *.yaml && echo "rm done"
 	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
 		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 10
 
@@ -132,6 +133,13 @@ B18-b200-mxfp8-llama3_8b:
 # Step Time: 3.44s , GPU utilization: 1961.8 MODEL_TFLOP/s/GPU , Peak Mem: 171.6GB
 B04-b200-nvfp4-llama3_8b:
 	$(MAKE) _bench_intranode family=llama model=llama3_8b gputype=b200 recipe=nvfp4
+
+
+b200-mxfp8-qwen3-30b-a3b:
+	$(MAKE) _bench_intranode family=qwen model=qwen3_30b_a3b gputype=b200 recipe=fp8_mx
+
+b200-bf16-nemotron-3-nano:
+	$(MAKE) _bench_intranode family=nemotronh model=nemotron_3_nano gputype=b200 recipe=bf16
 
 # # Qwen3 30B A3B  8xB200, MXFP8
 # 2-b200-mxfp8-qwen3-30b-a3b:
