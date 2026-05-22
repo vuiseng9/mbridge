@@ -1,0 +1,15 @@
+
+
+
+
+
+Storyline
+
+1. ootb config
+
+    # important otherwise, high variance of performance
+    cfg.model.moe_router_force_load_balancing = True  # required for token dropless
+
+
+recomputation is not needed.
+# cfg.model.recompute_granularity = None

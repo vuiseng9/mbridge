@@ -40,10 +40,11 @@ in summary,
     # these are base_cfg, which is an object of dataclasses
 /opt/Megatron-Bridge/scripts/performance/configs/llama/llama3_llm_pretrain.py
     def llama3_8b_pretrain_config_h100(
-    function to incrementally set more attribute to the instantiated object
+    function to incrementally set more attribute to the instantiated object,
+    typically we do load from the official recipe,
+    then override using the perf config above.
 
 then at main script, it is all the overrides
-
 
 
 # on H200 - Step Time: 12.73s , GPU utilization: 530.0 MODEL_TFLOP/s/GPU , Peak Mem: 70.0GB
