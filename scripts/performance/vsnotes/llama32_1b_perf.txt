@@ -1,0 +1,156 @@
+
+
+start with 4 cards of a6000, per gpu mem. capacity at 48 GB.
+
+
+LLAMA32_1B_PRETRAIN_CONFIG_A6000_BF16_V1 = replace(
+    BASE_LLAMA32_1B_CONFIG,
+    num_gpus=4,
+    micro_batch_size=1,
+    global_batch_size=4,
+    use_megatron_fsdp=False,
+)
+
+
+How it decides how to parallel map the model?
+/opt/Megatron-Bridge/src/megatron/bridge/training/setup.py
+l231     model = _build_distributed_model(cfg, pg_collection)
+
+                return model_config.provide_distributed_model(
+                    ddp_config=cfg.ddp,
+                    use_megatron_fsdp=cfg.dist.use_megatron_fsdp,
+                    use_torch_fsdp2=cfg.dist.use_torch_fsdp2,
+                    overlap_param_gather_with_optimizer_step=cfg.optimizer.overlap_param_gather_with_optimizer_step,
+                    data_parallel_random_init=cfg.rng.data_parallel_random_init,
+                    pg_collection=pg_collection,
+                )
+                /opt/Megatron-Bridge/src/megatron/bridge/models/model_provider.py
+                l202 model = get_model(
+                                model = _ddp_wrap(
+                                            if use_megatron_fsdp:
+                                                DP = FullyShardedDataParallel
+                                                if use_torch_fsdp2:
+                                                    raise ValueError("Using use_megatron_fsdp and use_torch_fsdp2 at the same time is not supported.")
+                                            elif use_torch_fsdp2:
+                                                DP = TorchFullyShardedDataParallel
+                                            else:
+                                                DP = DistributedDataParallel
+
+break at line 140 to peek into model, good to debug
+/opt/Megatron-Bridge/src/megatron/bridge/training/pretrain.py
+            train(
+                forward_step_func,
+                model,
+                optimizer,
+                scheduler,
+                train_data_iterator,
+                valid_data_iterator,
+                state,
+                checkpoint_manager,
+                pg_collection,
+                callback_manager=callback_manager,
+            )
+
+DistributedDataParallel(
+  (module): Float16Module(      # Float16Module is for both fp16 and bf16, check by model[0].config.bf16
+    (module): GPTModel(
+      (embedding): LanguageModelEmbedding(
+        (word_embeddings): VocabParallelEmbedding()
+        (embedding_dropout): Dropout(p=0.0, inplace=False)
+      )
+      (rotary_pos_emb): RotaryEmbedding()
+      (decoder): TransformerBlock(
+        (layers): ModuleList(
+          (0-15): 16 x TransformerLayer(
+            (input_layernorm): IdentityOp()
+            (self_attention): SelfAttention(
+              (core_attention): TEDotProductAttention(
+                (flash_attention): FlashAttention()
+                (fused_attention): FusedAttention()
+                (unfused_attention): UnfusedDotProductAttention(
+                  (scale_mask_softmax): FusedScaleMaskSoftmax()
+                  (attention_dropout): Dropout(p=0.0, inplace=False)
+                )
+              )
+              (linear_proj): TERowParallelLinear(in_features=2048, out_features=2048, bias=False, TP=1)
+              (linear_qkv): TELayerNormColumnParallelLinear(in_features=2048, out_features=3072, bias=False, TP=1)
+              (q_layernorm): IdentityOp()
+              (k_layernorm): IdentityOp()
+            )
+            (pre_cross_attn_layernorm): IdentityOp()
+            (cross_attention): IdentityOp()
+            (cross_attn_bda): IdentityFuncOp()
+            (pre_mlp_layernorm): IdentityOp()
+            (mlp): MLP(
+              (linear_fc1): TELayerNormColumnParallelLinear(in_features=2048, out_features=16384, bias=False, TP=1)
+              (linear_fc2): TERowParallelLinear(in_features=8192, out_features=2048, bias=False, TP=1)
+            )
+          )
+        )
+        (final_layernorm): RMSNorm()
+      )
+      (output_layer): ColumnParallelLinear(in_features=2048, out_features=128256, bias=False, TP=1)
+    )
+  )
+)
+
+
+
+only after first step, the theoretical memory breakdown is reported
+
+    Step Time: 6.74s , 1215.30 tok/s/gpu, GPU utilization: 11.0 MODEL_TFLOP/s/GPU , Peak Mem: 18.2GB
+
+    Number of parameters in transformer layers in billions:  0.97
+    Number of parameters in embedding layers in billions: 0.26
+    Total number of parameters in billions: 1.24
+    Number of parameters in most loaded shard in billions: 1.2359
+    Theoretical memory footprints: weight and optimizer=10607.66 MB
+/opt/Megatron-Bridge/src/megatron/bridge/training/utils/theoretical_memory_utils.py
+L111
+    num_bytes_per_parameter = (
+        18 if not config.optimizer.use_distributed_optimizer else 6 + (12 / config.data_parallel_size)
+    )
+    why 18? f32 grad, f32 opt param, f32 opt momentum, f32 variance, bf16 param
+    why 12/dp? zero2 shards grad, optimizer momentum and variance only. 
+
+    align? yes
+        cfg.optimizer.use_precision_aware_optimizer = False
+        cfg.optimizer.main_grads_dtype = torch.float32
+        cfg.optimizer.main_params_dtype = torch.float32
+        cfg.optimizer.exp_avg_dtype = torch.float32
+        cfg.optimizer.exp_avg_sq_dtype = torch.float32
+
+
+
+DistributedDataParallel is not torch's one
+
+how to turn off distributed optimizer? maybe we cant.
+optimzier.use_precision_aware_optimizer
+ddp.use_distributed_optimizer
+optimizer.use_distributed_optimizer
+
+    /opt/Megatron-Bridge/scripts/performance/utils/overrides.py
+    def set_post_overrides(
+        if compute_dtype == "bf16" and recipe.optimizer.optimizer == "adam":
+            recipe.optimizer.use_precision_aware_optimizer = True
+
+
+torch fsdp2 not working
+https://github.com/NVIDIA-NeMo/Megatron-Bridge/issues/2785
+
+
+mbs=1, gbs=4
+distopt
+Step Time: 2.06s , 3977.33 tok/s/gpu, GPU utilization: 35.9 MODEL_TFLOP/s/GPU , Peak Mem: 20.8GB
+megatron-fsdp
+Step Time: 2.74s , 2987.78 tok/s/gpu, GPU utilization: 27.0 MODEL_TFLOP/s/GPU , Peak Mem: 18.4GB
+
+mbs=3, gbs=32
+distopt
+OOM
+mbs=3, gbs=12
+megatron-fsdp
+Step Time: 3.44s , 7152.93 tok/s/gpu, GPU utilization: 64.6 MODEL_TFLOP/s/GPU , Peak Mem: 45.3GB
+
+Interesting - mbs3 the compute can hide those comms! mbs 1 comm is exposed
+garbage collector

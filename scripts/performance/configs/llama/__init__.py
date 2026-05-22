@@ -39,6 +39,9 @@ if HAVE_MEGATRON_BRIDGE:
         llama31_405b_pretrain_config_gb300,
         llama31_405b_pretrain_config_h100,
     )
+    from .llama32_llm_pretrain import (
+        llama32_1b_pretrain_config_a6000,
+    )
 
 from .llama3_workload_base_configs import (
     LLAMA3_8B_PRETRAIN_CONFIG_B200_BF16_V1,
@@ -160,6 +163,9 @@ from .llama31_workload_base_configs import (
     LLAMA31_405B_PRETRAIN_CONFIG_H100_BF16_V2,
     LLAMA31_405B_PRETRAIN_CONFIG_H100_FP8_CS_V1,
     LLAMA31_405B_PRETRAIN_CONFIG_H100_FP8_CS_V2,
+)
+from .llama32_workload_base_configs import (
+    LLAMA32_1B_PRETRAIN_CONFIG_A6000_BF16_V1
 )
 
 
@@ -289,6 +295,8 @@ __all__ = [
     "LLAMA3_70B_SFT_CONFIG_GB300_FP8_MX_V1",
     "LLAMA3_70B_SFT_CONFIG_H100_BF16_V1",
     "LLAMA3_70B_SFT_CONFIG_H100_FP8_CS_V1",
+    # 1B Pretrain V1
+    "LLAMA32_1B_PRETRAIN_CONFIG_A6000_BF16_V1",
 ]
 
 if HAVE_MEGATRON_BRIDGE:
@@ -321,5 +329,6 @@ if HAVE_MEGATRON_BRIDGE:
             "llama31_405b_pretrain_config_b300",
             "llama31_405b_pretrain_config_b200",
             "llama31_405b_pretrain_config_h100",
+            "llama32_1b_pretrain_config_a6000"
         ]
     )

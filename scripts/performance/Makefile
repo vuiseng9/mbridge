@@ -70,11 +70,34 @@ _profile_bench_intranode:
 			profiling.record_shapes=$(PROFILE_RECORD_SHAPES) \
 			$(PROFILE_HYDRA_OVERRIDES);
 
+1b_llama32_dev:
+	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
+		-m llama -mr llama32_1b -ng $(ngpu) -g a6000 -c bf16 --max_steps 15
+
+mbs3_mfsdp_prof_1b_llama32_dev:
+	mkdir -p $(PROFILE_DIR); \
+	DBG_ATTACH=$(dbg) nsys profile \
+		-s $(PROFILE_SAMPLE) \
+		-t $(PROFILE_TRACE) \
+		-o $(PROFILE_DIR)/$@ \
+		--force-overwrite true \
+		--capture-range=cudaProfilerApi \
+		--capture-range-end=stop \
+		$(PROFILE_GPU_METRICS_ARGS) \
+		$(PROFILE_NSYS_ARGS) \
+		$(torchrun_intra) $(ngpu) run_script.py \
+			-m llama -mr llama32_1b -ng $(ngpu) -g a6000 -c bf16 --max_steps $(PROFILE_MAX_STEPS) \
+			profiling.use_nsys_profiler=true \
+			profiling.profile_step_start=$(PROFILE_START) \
+			profiling.profile_step_end=$(PROFILE_STOP) \
+			"profiling.profile_ranks=$(PROFILE_RANKS)" \
+			profiling.record_shapes=$(PROFILE_RECORD_SHAPES) \
+			$(PROFILE_HYDRA_OVERRIDES);
 
 dev_olmoe:
 	rm -f *.yaml && echo "rm done"
 	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
-		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 10
+		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 20
 
 # on A100 - Step Time: 32.59s , GPU utilization: 207.0 MODEL_TFLOP/s/GPU , Peak Mem: 70GB
 B16-h100-bf16-llama3_8b:
