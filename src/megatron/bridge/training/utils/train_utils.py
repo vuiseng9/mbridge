@@ -782,7 +782,8 @@ def training_log(
         num_flops = num_floating_point_operations(config, batch_size)
         per_gpu_tps = batch_size * config.model.seq_length / elapsed_time_per_iteration / ws
         per_gpu_tf = num_flops / elapsed_time_per_iteration / ws / 1e12
-        peak_mem_gb = torch.cuda.max_memory_reserved() / 1024**3
+        # peak_mem_gb = torch.cuda.max_memory_reserved() / 1024**3
+        peak_mem_gb = torch.cuda.device_memory_used() / 1024**3
         print_rank_0(
             f"\nStep Time: {elapsed_time_per_iteration:.2f}s , {per_gpu_tps:.2f} tok/s/gpu, GPU utilization: {per_gpu_tf:.1f} MODEL_TFLOP/s/GPU ,"
             f" Peak Mem: {peak_mem_gb:.1f}GB\n"

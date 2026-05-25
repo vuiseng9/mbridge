@@ -96,8 +96,8 @@ mbs3_mfsdp_prof_1b_llama32_dev:
 
 dev_olmoe:
 	rm -f *.yaml && echo "rm done"
-	DBG_ATTACH=$(dbg) $(torchrun_intra) $(ngpu) run_script.py \
-		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 20
+	DBG_ATTACH=$(dbg) NVTE_CPU_OFFLOAD_V1=1 $(torchrun_intra) $(ngpu) run_script.py \
+		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 35
 
 gbs40_mfsdp_prof_olmoe:
 	mkdir -p $(PROFILE_DIR); \
