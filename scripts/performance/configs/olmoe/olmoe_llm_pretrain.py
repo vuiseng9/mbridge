@@ -14,7 +14,7 @@ from megatron.bridge.training.comm_overlap import (
 #     userbuffers_fp8_h100_h8192_tp4_mbs1_seqlen8192,
 )
 from megatron.bridge.training.config import ConfigContainer
-
+from megatron.core.transformer.enums import AttnBackend
 logger = logging.getLogger(__name__)
 
 def set_olmoe_common_configs(cfg: ConfigContainer) -> None:
@@ -50,9 +50,9 @@ def olmoe_1b_7b_pretrain_config_h100(
     cfg.mixed_precision = precision_config
     set_olmoe_common_configs(cfg)
     set_workload_base_configs(cfg, base_cfg)
-
-    # cfg.comm_overlap = CommOverlapConfig(tp_comm_overlap=bool(cfg.model.tensor_model_parallel_size > 1))
        
+    # cfg.model.attention_backend = AttnBackend.fused
+
     cfg.model.recompute_granularity = "selective"
     cfg.model.recompute_modules = ['layernorm', 'moe_act']
 
@@ -61,8 +61,9 @@ def olmoe_1b_7b_pretrain_config_h100(
     # choices: "attn_norm", "qkv_linear", "core_attn", "attn_proj",
             #  "mlp_norm", "expert_fc1", "moe_act".
 
+    # [rank1]: NotImplementedError: Operator aten.is_pinned.default does not have a sharding strategy registered.
     # cfg.optimizer.optimizer_cpu_offload = True
-    # cfg.optimizer.optimizer_offload_fraction = 1.0
+    # cfg.optimizer.optimizer_offload_fraction = 0.5
     # cfg.optimizer.overlap_cpu_optimizer_d2h_h2d = True
 
     if cfg.ddp.use_megatron_fsdp:

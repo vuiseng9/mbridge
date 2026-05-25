@@ -17,9 +17,9 @@ dbg ?= 0
 xargs ?= 
 
 PROFILE_DIR ?= profiles
-PROFILE_MAX_STEPS ?= 10
-PROFILE_START ?= 7
-PROFILE_STOP ?= 9
+PROFILE_MAX_STEPS ?= 20
+PROFILE_START ?= 16
+PROFILE_STOP ?= 18
 PROFILE_RANKS ?= [0]
 PROFILE_TRACE ?= cuda,nvtx,osrt
 PROFILE_SAMPLE ?= none
@@ -99,8 +99,9 @@ dev_olmoe:
 	DBG_ATTACH=$(dbg) NVTE_CPU_OFFLOAD_V1=1 $(torchrun_intra) $(ngpu) run_script.py \
 		-m olmoe -mr olmoe_1b_7b -ng $(ngpu) -g h100 -c bf16 --max_steps 35
 
-gbs40_mfsdp_prof_olmoe:
+record_gbs32_mfsdp_ep_prof_olmoe:
 	mkdir -p $(PROFILE_DIR); \
+	NVTE_CPU_OFFLOAD_V1=1 \
 	DBG_ATTACH=$(dbg) nsys profile \
 		-s $(PROFILE_SAMPLE) \
 		-t $(PROFILE_TRACE) \

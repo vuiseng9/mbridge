@@ -85,22 +85,33 @@ OLMOE_1B_7B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
     # cfg.model.offload_modules = ['...']
 # gbs32, 'mlp_norm': 960.00gb per gpu
 #       Step Time: 0.51s , 32091.48 tok/s/gpu, GPU utilization: 252.4 MODEL_TFLOP/s/GPU , Peak Mem: 50.0GB
-#
+#    48 Step Time: 0.74s , 33412.32 tok/s/gpu, GPU utilization: 262.8 MODEL_TFLOP/s/GPU , Peak Mem: 66.5GB
+#    64 Step Time: 0.97s , 33744.61 tok/s/gpu, GPU utilization: 265.4 MODEL_TFLOP/s/GPU , Peak Mem: 77.5GB
+
 # gbs32, 'qkv_linear': 3840.00gb per gpu
 #       Step Time: 0.54s , 30065.09 tok/s/gpu, GPU utilization: 236.5 MODEL_TFLOP/s/GPU , Peak Mem: 47.8GB
 #    56 Step Time: 0.84s , 34155.77 tok/s/gpu, GPU utilization: 268.7 MODEL_TFLOP/s/GPU , Peak Mem: 76.5GB
 #    64 Step Time: 0.95s , 34313.56 tok/s/gpu, GPU utilization: 269.9 MODEL_TFLOP/s/GPU , Peak Mem: 79.4GB
+
 # gbs32, 'core_attn': 3840.00
 #       Step Time: 0.55s , 29576.33 tok/s/gpu, GPU utilization: 232.6 MODEL_TFLOP/s/GPU , Peak Mem: 48.7GB
 # gbs32, 'expert_fc1': 7681.27
 #       Step Time: 0.69s , 23848.06 tok/s/gpu, GPU utilization: 187.6 MODEL_TFLOP/s/GPU , Peak Mem: 45.8GB
 # gbs32, 'moe_act': 7682.11
 #       Step Time: 0.73s , 22444.99 tok/s/gpu, GPU utilization: 176.5 MODEL_TFLOP/s/GPU , Peak Mem: 45.5GB
+#
+#   attn_norm, nothing saved.
+#
+# ValueError: attn_proj cannot be set to offload_modules alone without core_attn 
+# because the input of attn_proj is the output of core_attn, which is needed in core_attn.backward().
 
-# Open
+# Opens
 # how offload and recompute convention work, it is not clear
+# optimizer offload doesn't seem to work with megatron-fsdp
 
 # extra
+#    core_attn is not checkpoint without Output, just regular checkpoint
+
 
 # nvjet is NVIDIA's JIT (just-in-time) compiled GEMM engine inside cuBLASLt (newer cuBLAS versions).
 # nvjet_sm90_tst_128x256_64x4_2x1_v_bz_coopA_NTN
@@ -109,3 +120,7 @@ OLMOE_1B_7B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
 # It's CPU wall-clock time, but bracketed by torch.cuda.synchronize(), so it does capture GPU work completion — not just CPU control flow.
 # Here's what happens at each boundary:
 # start(barrier=True) (timers.py:147):
+
+
+# megatron/core/transformer/moe/moe_layer.py
+# megatron/core/transformer/transformer_layer.py

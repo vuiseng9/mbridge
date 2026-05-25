@@ -1,0 +1,100 @@
+
+print(model[0])
+FullyShardedDataParallel(
+  (module): MegatronFSDP(
+    (module): Float16Module(
+      (module): GPTModel(
+        (embedding): LanguageModelEmbedding(
+          (word_embeddings): VocabParallelEmbedding()
+          (embedding_dropout): Dropout(p=0.0, inplace=False)
+        )
+        (rotary_pos_emb): RotaryEmbedding()
+        (decoder): TransformerBlock(
+          (layers): ModuleList(
+            (0-15): 16 x TransformerLayer(
+              (input_layernorm): IdentityOp()
+              (self_attention): OLMoESelfAttention(
+                (core_attention): TEDotProductAttention(
+                  (flash_attention): FlashAttention()
+                  (fused_attention): FusedAttention()
+                  (unfused_attention): UnfusedDotProductAttention(
+                    (scale_mask_softmax): FusedScaleMaskSoftmax()
+                    (attention_dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (linear_proj): TERowParallelLinear(in_features=2048, out_features=2048, bias=False, TP=1)
+                (linear_qkv): TELayerNormColumnParallelLinear(in_features=2048, out_features=6144, bias=False, TP=1)
+                (q_layernorm): RMSNorm()
+                (k_layernorm): RMSNorm()
+              )
+              (pre_cross_attn_layernorm): IdentityOp()
+              (cross_attention): IdentityOp()
+              (cross_attn_bda): IdentityFuncOp()
+              (pre_mlp_layernorm): RMSNorm()
+              (mlp): MoELayer(
+                (router): TopKRouter()
+                (experts): TEGroupedMLP(
+                  (linear_fc1): TEColumnParallelGroupedLinear()
+                  (linear_fc2): TERowParallelGroupedLinear()
+                )
+              )
+            )
+          )
+          (final_layernorm): RMSNorm()
+        )
+        (output_layer): ColumnParallelLinear(in_features=2048, out_features=50304, bias=False, TP=1)
+      )
+    )
+  )
+)
+
+
+issue with this printout is that it is not clear!
+
+let's throw away all identity ops. and reorder
+
+print(model[0])
+FullyShardedDataParallel(
+  (module): MegatronFSDP(
+    (module): Float16Module(
+      (module): GPTModel(
+        (embedding): LanguageModelEmbedding(
+          (word_embeddings): VocabParallelEmbedding()
+          (embedding_dropout): Dropout(p=0.0, inplace=False)
+        )
+        (rotary_pos_emb): RotaryEmbedding()
+        (decoder): TransformerBlock(
+          (layers): ModuleList(
+            (0-15): 16 x TransformerLayer(
+              (self_attention): OLMoESelfAttention(
+                (linear_qkv): TELayerNormColumnParallelLinear(in_features=2048, out_features=6144, bias=False, TP=1) # -- norm fused
+                (q_layernorm): RMSNorm() # -- on projected q
+                (k_layernorm): RMSNorm() # -- on projected v
+                (core_attention): TEDotProductAttention(
+                  (flash_attention): FlashAttention()
+                  (fused_attention): FusedAttention()
+                  (unfused_attention): UnfusedDotProductAttention(
+                    (scale_mask_softmax): FusedScaleMaskSoftmax()
+                    (attention_dropout): Dropout(p=0.0, inplace=False)
+                  )
+                )
+                (linear_proj): TERowParallelLinear(in_features=2048, out_features=2048, bias=False, TP=1)
+              )
+              (pre_mlp_layernorm): RMSNorm()
+              (mlp): MoELayer(
+                (router): TopKRouter()
+                (experts): TEGroupedMLP(
+                  (linear_fc1): TEColumnParallelGroupedLinear()
+                        # glu, L310, /opt/Megatron-Bridge/3rdparty/Megatron-LM/megatron/core/transformer/moe/experts.py
+                  (linear_fc2): TERowParallelGroupedLinear()
+                )
+              )
+            )
+          )
+          (final_layernorm): RMSNorm()
+        )
+        (output_layer): ColumnParallelLinear(in_features=2048, out_features=50304, bias=False, TP=1)
+      )
+    )
+  )
+)
