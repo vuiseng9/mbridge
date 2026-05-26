@@ -200,6 +200,7 @@ def apply_dataset_override(
             split="9999,8,2",
             data_sharding=True,
             dataloader_type="single",
+            num_workers=8,
             skip_getting_attention_mask_from_dataset=True,
         )
 
