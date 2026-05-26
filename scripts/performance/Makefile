@@ -22,6 +22,7 @@ dbg ?= 0
 xargs ?= 
 CFG_VER ?= V2
 benchcfg ?= 0
+ENVVARS ?=
 
 login-hf:
 	if ! git config --global --get credential.helper | grep --color=auto -q store; then \
@@ -32,13 +33,26 @@ login-hf:
 	hf auth login
 
 _bench_intranode:
-	DBG_ATTACH=$(dbg) BENCH_CFG=$(benchcfg) $(torchrun_intra) $(ngpu) run_script.py \
+	DBG_ATTACH=$(dbg) BENCH_CFG=$(benchcfg) $(ENVVARS) $(torchrun_intra) $(ngpu) run_script.py \
 		-m $(family) -mr $(recipe) -cv $(CFG_VER) -ng $(ngpu) -g $(gputype) -c $(compute) --max_steps $(NSTEP) 
 		
 # on 8xH100, step 10, 12.631 secs, 10376.77 tps/gpu, 534.096 model_tflops/gpu, 68.01 gb/rank0
 101-h100-bf16-llama3_8b:
 	$(MAKE) _bench_intranode family=llama recipe=llama3_8b gputype=h100 compute=bf16
 
-dev-h100-bf16-olmoe:
-	$(MAKE) _bench_intranode family=olmoe recipe=olmoe_1b_7b CFG_VER=V1 gputype=h100 compute=bf16 NSTEP=30 benchcfg=1
+_h100-bf16-olmoe:
+	$(MAKE) _bench_intranode family=olmoe recipe=olmoe_1b_7b CFG_VER=V1 gputype=h100 compute=bf16 NSTEP=30
+
+# closest to paper setup, mbs=4, fsdp only
+b0-olmoe-megatron-fsdp:
+	$(MAKE) _h100-bf16-olmoe benchcfg=0
+
+b1-olmoe-ep8:
+	$(MAKE) _h100-bf16-olmoe benchcfg=1
+
+b2-olmoe-ep8-act-ckpt:
+	$(MAKE) _h100-bf16-olmoe benchcfg=2
+
+b3-olmoe-ep8-act-ckpt-offload:
+	$(MAKE) _h100-bf16-olmoe benchcfg=3 ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
 

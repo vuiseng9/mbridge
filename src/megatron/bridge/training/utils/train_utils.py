@@ -785,7 +785,7 @@ def training_log(
         peak_mem_gb = torch.cuda.device_memory_used() / 1024**3
         per_gpu_tps = batch_size * config.model.seq_length / elapsed_time_per_iteration / ws
         print_rank_0(
-            f"\nstep {iteration}, {elapsed_time_per_iteration:.3f} secs, {per_gpu_tps:.2f} tps/gpu, {per_gpu_tf:.3f} model_tflops/gpu, "
+            f"\nstep {iteration}, gbs {batch_size}, {elapsed_time_per_iteration:.3f} secs, {per_gpu_tps:.2f} tps/gpu, {per_gpu_tf:.3f} model_tflops/gpu, "
             f"{peak_mem_gb:.2f} gb/rank0\n"
         )
 

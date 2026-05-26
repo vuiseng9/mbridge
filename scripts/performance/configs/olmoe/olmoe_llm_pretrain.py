@@ -55,19 +55,24 @@ def olmoe_1b_7b_pretrain_config_h100(
     bench_cfg = os.getenv("BENCH_CFG", None)
     bench_cfg = int(bench_cfg) if bench_cfg is not None else None
 
+    cfg.train.micro_batch_size=8
+    cfg.train.global_batch_size=cfg.train.micro_batch_size*8
+    
     if bench_cfg >= 1:
+        cfg.model.expert_model_parallel_size=8
+        cfg.model.expert_tensor_parallel_size=1
+
+    if bench_cfg >= 2:
         cfg.model.recompute_granularity = "selective"
+        # cfg.model.recompute_modules = ['moe_act']
+        # cfg.model.recompute_modules = ['layernorm']
         cfg.model.recompute_modules = ['layernorm', 'moe_act']
 
-    # cfg.model.fine_grained_activation_offloading = True
-    # cfg.model.offload_modules = ['mlp_norm']
-    #   choices: "attn_norm", "qkv_linear", "core_attn", "attn_proj",
-                #  "mlp_norm", "expert_fc1", "moe_act".
-
-    # NotImplementedError: Operator aten.is_pinned.default does not have a sharding strategy registered.
-    # cfg.optimizer.optimizer_cpu_offload = True
-    # cfg.optimizer.optimizer_offload_fraction = 0.5
-    # cfg.optimizer.overlap_cpu_optimizer_d2h_h2d = True
+    if bench_cfg >= 3:
+        cfg.model.fine_grained_activation_offloading = True
+        cfg.model.offload_modules = ['mlp_norm']
+        #   choices: "attn_norm", "qkv_linear", "core_attn", "attn_proj",
+                    #  "mlp_norm", "expert_fc1", "moe_act".
 
     if cfg.ddp.use_megatron_fsdp:
         cfg.ddp.nccl_ub = False
@@ -75,10 +80,10 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.ddp.keep_fp8_transpose_cache = True
 
     if cfg.model.expert_model_parallel_size > 1:
-        cfg.model.moe_token_dispatcher_type = "alltoall"
-        cfg.model.moe_flex_dispatcher_backend = None
-        # cfg.model.moe_token_dispatcher_type = "flex"
-        # cfg.model.moe_flex_dispatcher_backend = "hybridep"
+        # cfg.model.moe_token_dispatcher_type = "alltoall"
+        # cfg.model.moe_flex_dispatcher_backend = None
+        cfg.model.moe_token_dispatcher_type = "flex"
+        cfg.model.moe_flex_dispatcher_backend = "hybridep"
         # cfg.model.moe_flex_dispatcher_backend = "deepep"
 
     return cfg
