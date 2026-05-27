@@ -55,12 +55,18 @@ def olmoe_1b_7b_pretrain_config_h100(
     bench_cfg = os.getenv("BENCH_CFG", None)
     bench_cfg = int(bench_cfg) if bench_cfg is not None else None
 
-    cfg.train.micro_batch_size=8
-    cfg.train.global_batch_size=cfg.train.micro_batch_size*8
-    
+    # goto workload base to config
+    # cfg.train.micro_batch_size=8
+    # cfg.train.global_batch_size=cfg.train.micro_batch_size*8
+    cfg.model.num_layers = 2
+
+    cfg.logger.timing_log_level = 2
+    cfg.logger.log_timers_to_tensorboard = False
+    cfg.logger.timing_log_option = "max"
+
     if bench_cfg >= 1:
-        cfg.model.expert_model_parallel_size=8
-        cfg.model.expert_tensor_parallel_size=1
+        cfg.model.expert_model_parallel_size = base_cfg.num_gpus
+        cfg.model.expert_tensor_parallel_size = 1
 
     if bench_cfg >= 2:
         cfg.model.recompute_granularity = "selective"
@@ -80,10 +86,10 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.ddp.keep_fp8_transpose_cache = True
 
     if cfg.model.expert_model_parallel_size > 1:
-        # cfg.model.moe_token_dispatcher_type = "alltoall"
-        # cfg.model.moe_flex_dispatcher_backend = None
-        cfg.model.moe_token_dispatcher_type = "flex"
-        cfg.model.moe_flex_dispatcher_backend = "hybridep"
+        cfg.model.moe_token_dispatcher_type = "alltoall"
+        cfg.model.moe_flex_dispatcher_backend = None
+        # cfg.model.moe_token_dispatcher_type = "flex"
+        # cfg.model.moe_flex_dispatcher_backend = "hybridep"
         # cfg.model.moe_flex_dispatcher_backend = "deepep"
 
     return cfg

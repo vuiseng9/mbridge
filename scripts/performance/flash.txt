@@ -1,0 +1,49 @@
+
+fsdp
+step 30, gbs 4, 1.371 secs, 2986.92 tps/gpu, 4.552 model_tflops/gpu, 14.90 gb/rank0
+
+ep4
+step 30, gbs 4, 0.482 secs, 8500.55 tps/gpu, 12.956 model_tflops/gpu, 10.97 gb/rank0
+
+b2-olmoe-ep8-act-ckpt
+step 30, gbs 4, 0.482 secs, 8503.51 tps/gpu, 12.960 model_tflops/gpu, 9.69 gb/rank0
+
+b3-olmoe-ep8-act-ckpt-offload:
+step 30, gbs 4, 0.484 secs, 8467.72 tps/gpu, 12.906 model_tflops/gpu, 9.71 gb/rank0
+
+
+    cfg.logger.timing_log_level = 2
+    cfg.logger.log_timers_to_tensorboard = False
+    cfg.logger.timing_log_option = "max"
+
+all is all ranks, too much, use max
+
+INFO:megatron.core.timers:max time across ranks (ms):
+    forward-backward ...............................: 1015.41
+    embedding-grads-all-reduce .....................: 0.02
+    all-grads-sync .................................: 8.23
+    params-all-gather ..............................: 340.17
+    optimizer-copy-to-main-grad ....................: 0.01
+    optimizer-clip-main-grad .......................: 4.83
+    optimizer-count-zeros ..........................: 0.02
+    optimizer-inner-step ...........................: 15.44
+    optimizer-copy-main-to-model-params ............: 4.10
+    optimizer ......................................: 360.03
+    batch-generator ................................: 0.46
+    forward-compute ................................: 295.91
+    backward-compute ...............................: 710.12
+
+INFO:megatron.core.timers:max time across ranks (ms):
+    forward-backward ...............................: 391.90
+    embedding-grads-all-reduce .....................: 0.02
+    all-grads-sync .................................: 2.88
+    params-all-gather ..............................: 80.53
+    optimizer-copy-to-main-grad ....................: 0.01
+    optimizer-clip-main-grad .......................: 4.55
+    optimizer-count-zeros ..........................: 0.01
+    optimizer-inner-step ...........................: 13.91
+    optimizer-copy-main-to-model-params ............: 1.99
+    optimizer ......................................: 99.94
+    batch-generator ................................: 0.59
+    forward-compute ................................: 110.23
+    backward-compute ...............................: 277.72

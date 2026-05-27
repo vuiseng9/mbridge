@@ -4,10 +4,12 @@ from utils.utils import WorkloadBaseConfig
 
 BASE_OLMOE_1B_7B_CONFIG = WorkloadBaseConfig()
 
+NGPU=4
+MBS=1
 OLMOE_1B_7B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
     BASE_OLMOE_1B_7B_CONFIG,
-    num_gpus=8,
-    micro_batch_size=4,
-    global_batch_size=32,
+    num_gpus=NGPU,
+    micro_batch_size=MBS,
+    global_batch_size=MBS*NGPU,
     use_megatron_fsdp=True,
 )
