@@ -97,8 +97,11 @@ def olmoe_1b_7b_pretrain_config_h100(
     if cfg.model.expert_model_parallel_size > 1:
         # cfg.model.moe_token_dispatcher_type = "alltoall"
         # cfg.model.moe_flex_dispatcher_backend = None
+
         # cfg.model.moe_token_dispatcher_type = "flex"
         # cfg.model.moe_flex_dispatcher_backend = "hybridep"
-        cfg.model.moe_flex_dispatcher_backend = "deepep"
+        # cfg.model.moe_flex_dispatcher_backend = "deepep"
+        
         cfg.model.moe_token_dispatcher_type = "symm_mem"
+        cfg.model.moe_flex_dispatcher_backend = "torch"
     return cfg
