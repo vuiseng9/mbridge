@@ -59,10 +59,19 @@ def olmoe_1b_7b_pretrain_config_h100(
     # cfg.train.micro_batch_size=8
     # cfg.train.global_batch_size=cfg.train.micro_batch_size*8
     cfg.model.num_layers = 2
+    # cfg.model.moe_router_fusion = True
+    # cfg.model.bias_activation_fusion = True
+    # cfg.model.bias_dropout_fusion = True
 
-    cfg.logger.timing_log_level = 2
-    cfg.logger.log_timers_to_tensorboard = False
-    cfg.logger.timing_log_option = "max"
+    # cfg.model.cuda_graph_impl = "transformer_engine"
+    # cfg.model.cuda_graph_scope = ["attn", "moe_router", "moe_preprocess", "moe_preprocess"]
+    # cfg.model.cuda_graph_warmup_steps = 5
+    # cfg.model.use_te_rng_tracker = True
+    # cfg.rng.te_rng_tracker = True
+
+    # cfg.logger.timing_log_level = 2
+    # cfg.logger.log_timers_to_tensorboard = False
+    # cfg.logger.timing_log_option = "max"
 
     if bench_cfg >= 1:
         cfg.model.expert_model_parallel_size = base_cfg.num_gpus
@@ -86,10 +95,10 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.ddp.keep_fp8_transpose_cache = True
 
     if cfg.model.expert_model_parallel_size > 1:
-        cfg.model.moe_token_dispatcher_type = "alltoall"
-        cfg.model.moe_flex_dispatcher_backend = None
+        # cfg.model.moe_token_dispatcher_type = "alltoall"
+        # cfg.model.moe_flex_dispatcher_backend = None
         # cfg.model.moe_token_dispatcher_type = "flex"
         # cfg.model.moe_flex_dispatcher_backend = "hybridep"
-        # cfg.model.moe_flex_dispatcher_backend = "deepep"
-
+        cfg.model.moe_flex_dispatcher_backend = "deepep"
+        cfg.model.moe_token_dispatcher_type = "symm_mem"
     return cfg

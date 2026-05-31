@@ -1,15 +1,22 @@
 
-fsdp
-step 30, gbs 4, 1.371 secs, 2986.92 tps/gpu, 4.552 model_tflops/gpu, 14.90 gb/rank0
+a6000x4
+b0 - just sharded dp
+mlmfsdp - step 30, gbs 4, 2.037 secs, 2010.65 tps/gpu, 3.064 model_tflops/gpu, 14.66 gb/rank0
+distopt - step 30, gbs 4, 1.602 secs, 2556.45 tps/gpu, 3.896 model_tflops/gpu, 12.50 gb/rank0
 
-ep4
-step 30, gbs 4, 0.482 secs, 8500.55 tps/gpu, 12.956 model_tflops/gpu, 10.97 gb/rank0
+b1 - EP4
+mlmfsdp - step 30, gbs 4, 0.723 secs, 5666.11 tps/gpu, 8.636 model_tflops/gpu, 10.01 gb/rank0
+distopt - step 30, gbs 4, 0.725 secs, 5650.89 tps/gpu, 8.613 model_tflops/gpu, 9.84 gb/rank0
 
-b2-olmoe-ep8-act-ckpt
-step 30, gbs 4, 0.482 secs, 8503.51 tps/gpu, 12.960 model_tflops/gpu, 9.69 gb/rank0
+b2 = b1 + actckpt
+mlmfsdp - step 30, gbs 4, 0.733 secs, 5588.84 tps/gpu, 8.518 model_tflops/gpu, 9.31 gb/rank0
+distopt - step 30, gbs 4, 0.725 secs, 5649.02 tps/gpu, 8.610 model_tflops/gpu, 9.40 gb/rank0
 
-b3-olmoe-ep8-act-ckpt-offload:
-step 30, gbs 4, 0.484 secs, 8467.72 tps/gpu, 12.906 model_tflops/gpu, 9.71 gb/rank0
+b3 = b1 + actckpt + offload
+mlmfsdp - step 30, gbs 4, 0.740 secs, 5535.80 tps/gpu, 8.437 model_tflops/gpu, 9.32 gb/rank0
+distopt - step 30, gbs 4, 0.729 secs, 5622.13 tps/gpu, 8.569 model_tflops/gpu, 9.41 gb/rank0
+
+# distopt has better performance than mlmfsdp
 
 
     cfg.logger.timing_log_level = 2
@@ -47,3 +54,25 @@ INFO:megatron.core.timers:max time across ranks (ms):
     batch-generator ................................: 0.59
     forward-compute ................................: 110.23
     backward-compute ...............................: 277.72
+
+
+
+
+ep4
+step 30, gbs 4, 0.482 secs, 8500.55 tps/gpu, 12.956 model_tflops/gpu, 10.97 gb/rank0
+
+    cfg.model.moe_router_fusion = True
+step 30, gbs 4, 0.478 secs, 8567.58 tps/gpu, 13.058 model_tflops/gpu, 10.97 gb/rank0
+
+    cfg.model.bias_activation_fusion = True
+    cfg.model.bias_dropout_fusion = True
+step 30, gbs 4, 0.474 secs, 8634.06 tps/gpu, 13.159 model_tflops/gpu, 9.72 gb/rank0
+distopt
+step 30, gbs 4, 0.467 secs, 8777.51 tps/gpu, 13.378 model_tflops/gpu, 9.58 gb/rank0
+
+    cfg.model.cuda_graph_scope = ["attn", "moe_router", "moe_preprocess"]
+step 30, gbs 4, 0.468 secs, 8750.17 tps/gpu, 13.336 model_tflops/gpu, 10.52 gb/rank0
+
+
+    cfg.model.cuda_graph_scope = ["attn", "moe_router", "moe_preprocess", "moe_preprocess"]
+step 30, gbs 4, 0.466 secs, 8784.35 tps/gpu, 13.388 model_tflops/gpu, 10.78 gb/rank0
