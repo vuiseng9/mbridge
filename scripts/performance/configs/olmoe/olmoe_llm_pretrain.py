@@ -59,6 +59,8 @@ def olmoe_1b_7b_pretrain_config_h100(
     # cfg.train.micro_batch_size=8
     # cfg.train.global_batch_size=cfg.train.micro_batch_size*8
     cfg.model.num_layers = 2
+    cfg.model.num_moe_experts = 32
+    print()
     # cfg.model.moe_router_fusion = True
     # cfg.model.bias_activation_fusion = True
     # cfg.model.bias_dropout_fusion = True

@@ -122,6 +122,9 @@ test-dispatcher:
 # moe_permute_fusion - dispatch+permute to expert major
 # moe_router_fusion - with aux loss
 
+# git remote add vs https://github.com/vuiseng9/megatron-lm
+# git checkout symm_mem
+
 dl-test-assets:
 	python /opt/Megatron-Bridge/3rdparty/Megatron-LM/tests/test_utils/python_scripts/download_unit_tests_dataset.py && mkdir -p /opt/data/ && mv assets/* /opt/data/.
 
