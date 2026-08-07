@@ -55,7 +55,7 @@ def olmoe_1b_7b_pretrain_config_h100(
     bench_cfg = os.getenv("BENCH_CFG", None)
     bench_cfg = int(bench_cfg) if bench_cfg is not None else None
 
-    cfg.train.micro_batch_size=8
+    cfg.train.micro_batch_size=5
     cfg.train.global_batch_size=cfg.train.micro_batch_size*8
     
     if bench_cfg >= 1:
@@ -69,6 +69,8 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.model.recompute_modules = ['layernorm', 'moe_act']
 
     if bench_cfg >= 3:
+        cfg.train.micro_batch_size=8
+        cfg.train.global_batch_size=cfg.train.micro_batch_size*8
         cfg.model.fine_grained_activation_offloading = True
         cfg.model.offload_modules = ['mlp_norm']
         #   choices: "attn_norm", "qkv_linear", "core_attn", "attn_proj",
