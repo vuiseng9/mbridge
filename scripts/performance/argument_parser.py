@@ -35,6 +35,7 @@ NUM_GPUS_PER_NODE_MAP = {
     "gb300": 4,
     "vr200": 4,
     "r100": 1,
+    "gpu48gb": 2,
 }
 
 
