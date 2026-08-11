@@ -90,7 +90,7 @@ def olmoe_7b_pretrain_config() -> ConfigContainer:
     cfg.model.moe_hybridep_num_sms = 16
 
     # Training config
-    cfg.train.train_iters = 500_000
+    cfg.train.train_iters = 10 # Mock Dataset size depends on this, set small for speed
     cfg.train.global_batch_size = 2048
     cfg.train.micro_batch_size = 1
     cfg.validation.eval_interval = 2000

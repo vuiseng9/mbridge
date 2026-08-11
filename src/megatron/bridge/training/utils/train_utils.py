@@ -1129,9 +1129,18 @@ def training_log(
                 )
             else:
                 num_flops = num_floating_point_operations(config, batch_size)
-            per_gpu_tf = num_flops / elapsed_time_per_iteration / get_world_size_safe() / 1e12
+            ws = get_world_size_safe()
+            per_gpu_tps = batch_size * config.model.seq_length / elapsed_time_per_iteration / ws
+            per_gpu_tf = num_flops / elapsed_time_per_iteration / ws / 1e12
+            
+            free, total = torch.cuda.mem_get_info()
+            nvsmi_used = (total - free) / 1e9
             print_rank_0(
-                f"Step Time : {elapsed_time_per_iteration:.2f}s GPU utilization: {per_gpu_tf:.1f}MODEL_TFLOP/s/GPU"
+                f"── \nstep_{iteration-1}, "
+                f"{elapsed_time_per_iteration*1000:.0f} ms, "
+                f"{nvsmi_used:.1f} gb/gpu, "
+                f"{per_gpu_tps:.1f} tok/s/gpu, "
+                f"{per_gpu_tf:.1f} tflops/gpu\n"
             )
 
         # throughput
