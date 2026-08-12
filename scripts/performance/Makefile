@@ -122,3 +122,9 @@ dev-bf16-llama32_1b:
 
 dev-bf16-olmoe-4-layer:
 	$(MAKE) __perf_run_intranode__ family=dev model=dev_olmoe_4_layer gputype=gpu48gb recipe=bf16
+
+qw3-a3b-b200-mxfp8:
+	$(MAKE) __perf_run_intranode__ family=qwen model=qwen3_30b_a3b gputype=b200 recipe=fp8_mx
+	
+dsv3-gb300-mxfp8:
+	$(MAKE) __perf_run_intranode__ family=deepseek model=deepseek_v3 gputype=gb300 recipe=fp8_mx
