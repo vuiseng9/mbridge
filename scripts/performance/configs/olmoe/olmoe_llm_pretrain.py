@@ -82,10 +82,11 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.ddp.keep_fp8_transpose_cache = True
 
     if cfg.model.expert_model_parallel_size > 1:
-        # cfg.model.moe_token_dispatcher_type = "alltoall"
-        # cfg.model.moe_flex_dispatcher_backend = None
-        cfg.model.moe_token_dispatcher_type = "flex"
-        cfg.model.moe_flex_dispatcher_backend = "hybridep"
+        cfg.model.moe_token_dispatcher_type = "alltoall"
+        cfg.model.moe_flex_dispatcher_backend = None
+        # cfg.model.moe_token_dispatcher_type = "flex"
+        # cfg.model.moe_flex_dispatcher_backend = "hybridep"
         # cfg.model.moe_flex_dispatcher_backend = "deepep"
 
+    cfg.model.num_layers = int(cfg.model.num_layers/4)
     return cfg

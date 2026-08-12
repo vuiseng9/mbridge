@@ -17,5 +17,5 @@ OLMOE_1B_7B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
     num_gpus = NGPU,
     micro_batch_size = _mbs,
     global_batch_size = _mbs * NGPU,
-    use_megatron_fsdp = True,
+    use_megatron_fsdp = False,
 )

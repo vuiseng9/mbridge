@@ -18,7 +18,7 @@ nsys_cmd ?=
 nsys_args ?=
 prof_dir ?= ./nsys-prof
 bench_dir ?= ./nsys-bench
-base_step ?= 3
+base_step ?= 10
 end_step ?= 
 # base_step=3, end_step=4, meaning only step id 3 appearing in nsys
 # but it is 4th step of all training steps
@@ -45,6 +45,7 @@ ifneq ($(filter 1,$(prof) $(bench)),)
 		--capture-range=cudaProfilerApi \
 		--capture-range-end=stop \
 		-t cuda,nvtx,cudnn,cublas \
+		--cuda-graph-trace=node \
 		-o $(out_path) \
 		--force-overwrite true
   endef
@@ -139,14 +140,30 @@ _h100-bf16-olmoe:
 	$(MAKE) __perf_run_intranode__ family=olmoe model=olmoe_1b_7b gputype=h100 recipe=bf16 NSTEP=30
 
 # closest to paper setup, mbs=4, fsdp only
-b0-olmoe-megatron-fsdp:
+b0-olmoe-dist-optimizer:
 	$(MAKE) _h100-bf16-olmoe benchcfg=0
+
+partial-cg-b0-olmoe-dist-optimizer:
+	$(MAKE) _h100-bf16-olmoe benchcfg=0 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess"
+
+full-cg-b0-olmoe-dist-optimizer:
+	$(MAKE) _h100-bf16-olmoe benchcfg=0 xargs="--cuda_graph_impl local --cuda_graph_scope full_iteration"
+
 
 b1-olmoe-ep8:
 	$(MAKE) _h100-bf16-olmoe benchcfg=1
 
+partial-cg-b1-olmoe-ep8:
+	$(MAKE) _h100-bf16-olmoe benchcfg=1 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess"
+
 b2-olmoe-ep8-act-ckpt:
 	$(MAKE) _h100-bf16-olmoe benchcfg=2
 
+partial-cg-b2-olmoe-ep8-act-ckpt:
+	$(MAKE) _h100-bf16-olmoe benchcfg=2 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess"
+
 b3-olmoe-ep8-act-ckpt-offload:
 	$(MAKE) _h100-bf16-olmoe benchcfg=3 ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
+
+x-partial-cg-b3-olmoe-ep8-act-ckpt-offload:
+	$(MAKE) _h100-bf16-olmoe benchcfg=3 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess" ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
