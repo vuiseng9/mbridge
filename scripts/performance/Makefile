@@ -173,6 +173,9 @@ _h100-fp8_mx-olmoe:
 mx8-b1-olmoe-ep8:
 	$(MAKE) _h100-fp8_mx-olmoe benchcfg=1
 
+partial-cg-mx8-b1-olmoe-ep8:
+	$(MAKE) _h100-fp8_mx-olmoe benchcfg=1 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess" ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
+
 # benchcfg = 5 to see full iteration cuda-graph, run_script is a mess
 full-cg-mx8-b1-olmoe-ep8:
 	$(MAKE) _h100-fp8_mx-olmoe benchcfg=4
