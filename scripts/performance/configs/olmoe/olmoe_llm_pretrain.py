@@ -5,6 +5,7 @@ from utils.overrides import set_workload_base_configs
 from utils.precision import get_precision_config
 from utils.utils import get_workload_base_config
 
+from megatron.bridge.utils.cuda_graph import is_full_iteration_cuda_graph
 
 from megatron.bridge.recipes.olmoe import olmoe_7b_pretrain_config
 from megatron.bridge.training.comm_overlap import (
@@ -31,6 +32,20 @@ def set_olmoe_common_configs(cfg: ConfigContainer) -> None:
     cfg.model.attention_backend = AttnBackend.auto
     cfg.model.moe_router_force_load_balancing = True  # required for token dropless
     cfg.model.recompute_granularity = None
+
+def set_full_iter_cg_configs(cfg: ConfigContainer) -> None:
+    """Apply defaults required by full-iteration CUDA graph capture with dropless MoE.
+
+    Dropless MoE produces variable-shaped per-expert tensors that CG cannot
+    capture; we pad to a fixed capacity (pad_experts + capacity factor) and use
+    MCore PR #4247 paged stashing to recover memory. Callers should gate on
+    `is_full_iteration_cuda_graph(cfg.model)`.
+    """
+    cfg.model.moe_pad_experts_for_cuda_graph_inference = True
+    cfg.model.moe_paged_stash = True
+    cfg.model.moe_expert_rank_capacity_factor = 1.5
+    cfg.model.moe_paged_stash_buffer_size_factor_cuda = 1.2
+    cfg.model.moe_paged_stash_buffer_size_factor_cpu = 1.0
 
 def olmoe_1b_7b_pretrain_config_h100(
     precision: str = "bf16", mock: bool = True, config_variant: str = "v1"
@@ -62,13 +77,13 @@ def olmoe_1b_7b_pretrain_config_h100(
         cfg.model.expert_model_parallel_size = base_cfg.num_gpus
         cfg.model.expert_tensor_parallel_size = 1
 
-    if bench_cfg >= 2:
+    if bench_cfg >= 2 and bench_cfg < 4:
         cfg.model.recompute_granularity = "selective"
         # cfg.model.recompute_modules = ['moe_act']
         # cfg.model.recompute_modules = ['layernorm']
         cfg.model.recompute_modules = ['layernorm', 'moe_act']
 
-    if bench_cfg >= 3:
+    if bench_cfg >= 3 and bench_cfg < 4:
         cfg.train.micro_batch_size = 8
         cfg.train.global_batch_size = cfg.train.micro_batch_size * base_cfg.num_gpus
         cfg.model.fine_grained_activation_offloading = True
@@ -88,5 +103,19 @@ def olmoe_1b_7b_pretrain_config_h100(
         # cfg.model.moe_flex_dispatcher_backend = "hybridep"
         # cfg.model.moe_flex_dispatcher_backend = "deepep"
 
-    cfg.model.num_layers = int(cfg.model.num_layers/4)
+    if bench_cfg >= 4:
+        cfg.model.cuda_graph_impl = "full_iteration"
+        cfg.model.cuda_graph_scope = []
+
+        # cfg.model.moe_router_fusion = True
+        # cfg.model.cross_entropy_loss_fusion = True
+        cfg.model.use_transformer_engine_op_fuser = True
+        cfg.model.moe_token_dispatcher_type = "flex"
+        cfg.model.moe_flex_dispatcher_backend = "hybridep"
+        cfg.model.offload_modules = []
+        cfg.model.use_te_rng_tracker = True
+
+        if precision == "fp8_mx" and is_full_iteration_cuda_graph(cfg.model):
+            set_full_iter_cg_configs(cfg)
+
     return cfg

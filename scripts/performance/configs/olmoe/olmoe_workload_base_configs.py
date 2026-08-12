@@ -19,3 +19,11 @@ OLMOE_1B_7B_PRETRAIN_CONFIG_H100_BF16_V1 = replace(
     global_batch_size = _mbs * NGPU,
     use_megatron_fsdp = False,
 )
+
+OLMOE_1B_7B_PRETRAIN_CONFIG_H100_FP8_MX_V1 = replace(
+    BASE_OLMOE_1B_7B_CONFIG,
+    num_gpus = NGPU,
+    micro_batch_size = _mbs,
+    global_batch_size = _mbs * NGPU,
+    use_megatron_fsdp = False,
+)

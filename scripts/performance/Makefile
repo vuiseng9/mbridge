@@ -146,10 +146,6 @@ b0-olmoe-dist-optimizer:
 partial-cg-b0-olmoe-dist-optimizer:
 	$(MAKE) _h100-bf16-olmoe benchcfg=0 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess"
 
-full-cg-b0-olmoe-dist-optimizer:
-	$(MAKE) _h100-bf16-olmoe benchcfg=0 xargs="--cuda_graph_impl local --cuda_graph_scope full_iteration"
-
-
 b1-olmoe-ep8:
 	$(MAKE) _h100-bf16-olmoe benchcfg=1
 
@@ -167,3 +163,16 @@ b3-olmoe-ep8-act-ckpt-offload:
 
 x-partial-cg-b3-olmoe-ep8-act-ckpt-offload:
 	$(MAKE) _h100-bf16-olmoe benchcfg=3 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess" ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
+
+
+
+
+_h100-fp8_mx-olmoe:
+	$(MAKE) __perf_run_intranode__ family=olmoe model=olmoe_1b_7b gputype=h100 recipe=fp8_mx NSTEP=30
+
+mx8-b1-olmoe-ep8:
+	$(MAKE) _h100-fp8_mx-olmoe benchcfg=1
+
+# benchcfg = 5 to see full iteration cuda-graph, run_script is a mess
+full-cg-mx8-b1-olmoe-ep8:
+	$(MAKE) _h100-fp8_mx-olmoe benchcfg=4
