@@ -11,6 +11,8 @@ dbg ?= 0
 xargs ?= 
 logs_dir ?= ./logs
 dryrun ?= 0
+benchcfg ?= 0
+ENVVARS ?=
 
 nsys_cmd ?=
 nsys_args ?=
@@ -77,6 +79,7 @@ open-run-cfg-dump:
 # ── base ────────────────────────────────────────────────────────────────────────────────────────
 __perf_run_intranode__:
 	DBG_ATTACH=$(dbg) \
+		BENCH_CFG=$(benchcfg) $(ENVVARS) \
 		$(nsys_cmd) \
 			$(torchrun_intra) $(ngpu) run_script.py \
 				-m $(family) -mr $(model) -ng $(ngpu) -g $(gputype) -c $(recipe) --max_steps $(NSTEP) $(dr) $(xargs) \
@@ -123,8 +126,27 @@ dev-bf16-llama32_1b:
 dev-bf16-olmoe-4-layer:
 	$(MAKE) __perf_run_intranode__ family=dev model=dev_olmoe_4_layer gputype=gpu48gb recipe=bf16
 
+# ── mcore-moe ─────────────────────────────────────────────────────────────────────────────
 qw3-a3b-b200-mxfp8:
 	$(MAKE) __perf_run_intranode__ family=qwen model=qwen3_30b_a3b gputype=b200 recipe=fp8_mx
 	
 dsv3-gb300-mxfp8:
 	$(MAKE) __perf_run_intranode__ family=deepseek model=deepseek_v3 gputype=gb300 recipe=fp8_mx
+
+# ── olmoe ─────────────────────────────────────────────────────────────────────────────
+
+_h100-bf16-olmoe:
+	$(MAKE) __perf_run_intranode__ family=olmoe model=olmoe_1b_7b gputype=h100 recipe=bf16 NSTEP=30
+
+# closest to paper setup, mbs=4, fsdp only
+b0-olmoe-megatron-fsdp:
+	$(MAKE) _h100-bf16-olmoe benchcfg=0
+
+b1-olmoe-ep8:
+	$(MAKE) _h100-bf16-olmoe benchcfg=1
+
+b2-olmoe-ep8-act-ckpt:
+	$(MAKE) _h100-bf16-olmoe benchcfg=2
+
+b3-olmoe-ep8-act-ckpt-offload:
+	$(MAKE) _h100-bf16-olmoe benchcfg=3 ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
