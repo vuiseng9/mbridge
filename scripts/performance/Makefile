@@ -115,6 +115,13 @@ b200-mxfp8-llama3_8b:
 b200-nvfp4-llama3_8b:
 	$(MAKE) __perf_run_intranode__ family=llama model=llama3_8b gputype=b200 recipe=nvfp4
 
+# ── nemo mbridge recipe ─────────────────────────────────────────────────────────────────────────────
+qw3-a3b-b200-mxfp8:
+	$(MAKE) __perf_run_intranode__ family=qwen model=qwen3_30b_a3b gputype=b200 recipe=fp8_mx
+	
+dsv3-gb300-mxfp8:
+	$(MAKE) __perf_run_intranode__ family=deepseek model=deepseek_v3 gputype=gb300 recipe=fp8_mx
+
 # ── dev on x48gb gpu ─────────────────────────────────────────────────────────────────────────────
 
 dev-bf16-llama32_1b:
@@ -122,9 +129,3 @@ dev-bf16-llama32_1b:
 
 dev-bf16-olmoe-4-layer:
 	$(MAKE) __perf_run_intranode__ family=dev model=dev_olmoe_4_layer gputype=gpu48gb recipe=bf16
-
-qw3-a3b-b200-mxfp8:
-	$(MAKE) __perf_run_intranode__ family=qwen model=qwen3_30b_a3b gputype=b200 recipe=fp8_mx
-	
-dsv3-gb300-mxfp8:
-	$(MAKE) __perf_run_intranode__ family=deepseek model=deepseek_v3 gputype=gb300 recipe=fp8_mx

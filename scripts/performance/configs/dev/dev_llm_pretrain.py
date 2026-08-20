@@ -96,14 +96,14 @@ def dev_olmoe_4_layer_pretrain_config_gpu48gb(
     set_workload_base_configs(cfg, base_cfg)
 
     cfg.model.num_layers = 4 # 16 original
+    cfg.model.moe_router_topk = 1
     # cfg.model.num_moe_experts = 32
-        
-    # cfg.train.micro_batch_size=5
-    # cfg.train.global_batch_size=cfg.train.micro_batch_size*8
     
-    cfg.model.expert_model_parallel_size=base_cfg.num_gpus
-    cfg.model.expert_tensor_parallel_size=1
+    cfg.model.expert_model_parallel_size = base_cfg.num_gpus
 
+    # cfg.train.micro_batch_size = 5
+    # cfg.train.global_batch_size = cfg.train.micro_batch_size * base_cfg.num_gpus
+    
     if cfg.ddp.use_megatron_fsdp:
         cfg.ddp.nccl_ub = False
         cfg.model.gradient_accumulation_fusion = False  # Disabled to avoid functional errors
