@@ -18,7 +18,7 @@ nsys_cmd ?=
 nsys_args ?=
 prof_dir ?= ./nsys-prof
 bench_dir ?= ./nsys-bench
-base_step ?= 3
+base_step ?= 10
 end_step ?= 
 # base_step=3, end_step=4, meaning only step id 3 appearing in nsys
 # but it is 4th step of all training steps
@@ -136,17 +136,36 @@ dsv3-gb300-mxfp8:
 # ── olmoe ─────────────────────────────────────────────────────────────────────────────
 
 _h100-bf16-olmoe:
-	$(MAKE) __perf_run_intranode__ family=olmoe model=olmoe_1b_7b gputype=h100 recipe=bf16 NSTEP=30
+	$(MAKE) __perf_run_intranode__ family=olmoe model=olmoe_1b_7b gputype=h100 recipe=bf16 NSTEP=20
 
 # closest to paper setup, mbs=4, fsdp only
-b0-olmoe-megatron-fsdp:
-	$(MAKE) _h100-bf16-olmoe benchcfg=0
+00-olmoe-mfsdp-mbs4:
+	$(MAKE) _h100-bf16-olmoe benchcfg=0 xargs="--save_config_filepath saved_cfg/$@.yaml"
 
-b1-olmoe-ep8:
-	$(MAKE) _h100-bf16-olmoe benchcfg=1
+# bump mbs given surplus memory
+01-olmoe-mfsdp-mbs5:
+	$(MAKE) _h100-bf16-olmoe benchcfg=1 xargs="--save_config_filepath saved_cfg/$@.yaml"
 
-b2-olmoe-ep8-act-ckpt:
-	$(MAKE) _h100-bf16-olmoe benchcfg=2
+# ep enabled with nccl a2a backend
+02-olmoe-mfsdp-moe-ep8-mbs5-nccla2a:
+	$(MAKE) _h100-bf16-olmoe benchcfg=2 xargs="--save_config_filepath saved_cfg/$@.yaml"
 
-b3-olmoe-ep8-act-ckpt-offload:
-	$(MAKE) _h100-bf16-olmoe benchcfg=3 ENVVARS="NVTE_CPU_OFFLOAD_V1=1"
+# ep enabled with deepep a2a backend
+03-olmoe-mfsdp-moe-ep8-mbs5-deepep:
+	$(MAKE) _h100-bf16-olmoe benchcfg=3 xargs="--save_config_filepath saved_cfg/$@.yaml"
+
+# ep enabled with hybridep a2a backend
+04-olmoe-mfsdp-moe-ep8-mbs5-hybridep:
+	$(MAKE) _h100-bf16-olmoe benchcfg=4 xargs="--save_config_filepath saved_cfg/$@.yaml"
+
+05-olmoe-mfsdp-moe-ep8-mbs5-hybridep-actckpt:
+	$(MAKE) _h100-bf16-olmoe benchcfg=5 xargs="--save_config_filepath saved_cfg/$@.yaml"
+
+06-olmoe-mfsdp-moe-ep8-mbs7-hybridep-actckpt:
+	$(MAKE) _h100-bf16-olmoe benchcfg=6 xargs="--save_config_filepath saved_cfg/$@.yaml"
+
+07-olmoe-mfsdp-moe-ep8-mbs5-hybridep-actoffload:
+	$(MAKE) _h100-bf16-olmoe benchcfg=7 ENVVARS="NVTE_CPU_OFFLOAD_V1=1" xargs="--save_config_filepath saved_cfg/$@.yaml"
+
+08-olmoe-distopt-moe-ep8-mbs7-hybridep-act-offload-recompute-partial-cg:
+	$(MAKE) _h100-bf16-olmoe benchcfg=8 xargs="--cuda_graph_impl transformer_engine --cuda_graph_scope attn,moe_router,moe_preprocess --save_config_filepath saved_cfg/$@.yaml"
